@@ -53,6 +53,7 @@ const char* getfield(char* line, int num)
 }
 int main()
 {
+	char stations[8][25] = {"4bf58dd8d48988d1fe931735","4bf58dd8d48988d12b951735","4bf58dd8d48988d1fc931735","4bf58dd8d48988d1fd931735","4bf58dd8d48988d129951735","4f4531504b9074f6e4fb0102","4bf58dd8d48988d12a951735","52f2ab2ebcbc57f1066b8b51"};
 	FILE* stream = fopen("finalcheckindata.csv", "r");
     //FILE* out = fopen("densityout.txt","w");
     FILE* out = fopen("tmpfileout.txt","w");
@@ -62,6 +63,7 @@ int main()
     //exit(0);
     double density[SIZE][2];
     int densitycount[SIZE] = {0};
+    double distancestation[SIZE] = {0};
     int venuetypes[SIZE];
     int checkincount[SIZE] = {0};
     double neighbour_entropy[SIZE] = {0};
@@ -86,38 +88,62 @@ int main()
         i++;
         //printf("Lat & Lon (%lf, %lf) %d\n", lat, lon, i);
         free(tmp);
+		free(tmp1);
+		free(tmp2);
         if(i>SIZE)break;
     }
     printf("Calculating two features...for size = %d\n", SIZE);
     j = 0;
-    for(i=0; i<SIZE; i++){
-		int count = 0, nindex = 0;
-		double neighbours[minSIZE] = {0};
-		for(j=0; j<SIZE; j++){
-			if(i!=j){
-				double dis = distancebetweenlatlon(density[i][0], density[i][1], density[j][0], density[j][1]);
-				if(dis < DISTANCE && dis!=0){
-					count++;
+    int t;
+    //calculating minimum distance from train/bus/tram station
+    double mindist, d;
+    for(i=0;i<SIZE;i++){
+		mindist = 99999999.0;
+		for(j=0;j<SIZE;j++){
+				if(i!=j){
+					for(t = 0; t<8;t++){
+						if(venuetypes[j] == sumofchar(stations[t])){
+								d = distancebetweenlatlon(density[i][0], density[i][1], density[j][0], density[j][1]);
+								if(d<mindist){
+									mindist = d;
+								}
+						}
+					}
 				}
-				if(dis < NDISTANCE && dis!=0 && venuetypes[i]!=venuetypes[j]){
-					neighbours[venuetypes[j]]++;
-					nindex++;
-				}
-			}
 		}
-		printf("%d ",i);
-		neighbour_entropy[i] = calc_entropy(neighbours, nindex)==0?-2.0:calc_entropy(neighbours, nindex);
-		densitycount[i] = count;
+		distancestation[i] = (1.0/mindist);
+		printf("Calculating for venue no. %d\n",i);
 	}
-    for(i=0; i<SIZE; i++){
-		printf("\nWriting .. %d\n", i);
-		for(j=0; j<2; j++){
-				fprintf(out, "%lf ", density[i][j]);
-		}
-		fprintf(out, "%d ", densitycount[i]);
-		fprintf(out, "%lf ", neighbour_entropy[i]);
-		fprintf(out, "\n");
-	}
+    //calculating neighbour entropy and density
+    //for(i=0; i<SIZE; i++){
+		//int count = 0, nindex = 0;
+		//double neighbours[minSIZE] = {0};
+		//for(j=0; j<SIZE; j++){
+			//if(i!=j){
+				//double dis = distancebetweenlatlon(density[i][0], density[i][1], density[j][0], density[j][1]);
+				//if(dis < DISTANCE && dis!=0){
+					//count++;
+				//}
+				//if(dis < NDISTANCE && dis!=0 && venuetypes[i]!=venuetypes[j]){
+					//neighbours[venuetypes[j]]++;
+					//nindex++;
+				//}
+			//}
+		//}
+		//printf("%d ",i);
+		//neighbour_entropy[i] = calc_entropy(neighbours, nindex)==0?-2.0:calc_entropy(neighbours, nindex);
+		//densitycount[i] = count;
+	//}
+    //for(i=0; i<SIZE; i++){
+		//printf("\nWriting .. %d\n", i);
+		//for(j=0; j<2; j++){
+				//fprintf(out, "%lf ", density[i][j]);
+		//}
+		//fprintf(out, "%d ", densitycount[i]);
+		//fprintf(out, "%lf ", neighbour_entropy[i]);
+		//fprintf(out, "%lf ", distancestation[i])
+		//fprintf(out, "\n");
+	//}
 	fclose(out);
 	//printf("%lf", distancebetweenlatlon(40.719810,-74.002581,40.606800,-74.044170));
 	return 0;
